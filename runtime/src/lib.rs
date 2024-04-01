@@ -6,6 +6,7 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
+use frame_system::EnsureRoot;
 use pallet_grandpa::AuthorityId as GrandpaId;
 use sp_api::impl_runtime_apis;
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
@@ -271,6 +272,21 @@ impl pallet_sudo::Config for Runtime {
 impl pallet_insecure_randomness_collective_flip::Config for Runtime {}
 
 parameter_types! {
+	pub const MaxWellKnownNodes: u32 = 8;
+}
+
+impl pallet_node_authorization::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type MaxPeerIdLength = MaxWellKnownNodes;
+	type MaxWellKnownNodes = ConstU32<16>;
+	type AddOrigin = EnsureRoot<AccountId>;
+	type RemoveOrigin = EnsureRoot<AccountId>;
+	type SwapOrigin = EnsureRoot<AccountId>;
+	type ResetOrigin = EnsureRoot<AccountId>;
+	type WeightInfo = ();
+}
+
+parameter_types! {
 	pub MinimumLockableAmount: Balance = 10;
 }
 /// Configure the pallet-connect in pallets/template.
@@ -278,9 +294,9 @@ impl pallet_connect::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type WeightInfo = pallet_connect::weights::SubstrateWeight<Runtime>;
 	type Currency = Balances;
-	type MaxBioLength = ConstU32<200>;
+	type MaxBioLength = ConstU32<300>;
 	type MinimumLockableAmount = MinimumLockableAmount;
-	type MaxNameLength = ConstU32<10>;
+	type MaxNameLength = ConstU32<150>;
 	type Randomness = InsecureRandomness;
 }
 
@@ -300,6 +316,7 @@ construct_runtime!(
 		Balances: pallet_balances,
 		TransactionPayment: pallet_transaction_payment,
 		Sudo: pallet_sudo,
+		NodeAuthorization: pallet_node_authorization,
 		// Include the custom logic from the pallet-connect in the runtime.
 		Connect: pallet_connect,
 	}
